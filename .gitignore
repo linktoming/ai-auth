@@ -1,0 +1,19 @@
+# Build output
+/ai-auth
+/dist/
+
+# Vault data must never be committed: it holds wrapped keys and the audit log.
+/ai-auth-data/
+*.vault.json
+vault.json
+audit.log
+
+# Private keys
+*.pem
+id_ed25519*
+ai-auth_ed25519*
+!*.pub
+
+# Local environment
+.env
+.env.*
