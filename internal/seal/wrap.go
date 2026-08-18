@@ -17,7 +17,7 @@ import (
 
 // Wrapping schemes.
 const (
-	SchemeX25519 = "x25519-hkdf-sha256+xchacha20poly1305"
+	SchemeX25519  = "x25519-hkdf-sha256+xchacha20poly1305"
 	SchemeRSAOAEP = "rsa-oaep-sha256"
 )
 

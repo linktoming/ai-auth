@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      - name: Check formatting
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "These files need gofmt:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      # The race detector matters here: the server mutates shared vault state
+      # under a lock on every request.
+      - name: Test with the race detector
+        run: go test -race ./...
+
+      - name: Build
+        run: go build ./...
+
+      # Exercises the real binary end to end -- handshake, policy denials,
+      # second-factor minting, approvals and audit verification.
+      - name: End-to-end demo
+        run: ./examples/demo.sh
