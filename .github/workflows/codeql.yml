@@ -22,7 +22,7 @@ jobs:
       # Required so findings land in the repository's Security tab.
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
