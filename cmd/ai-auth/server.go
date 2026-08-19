@@ -267,7 +267,9 @@ func unseal(v *store.Vault) error {
 		return v.Unseal(key)
 	}
 	if path := os.Getenv("AI_AUTH_ROOT_KEY_FILE"); path != "" {
-		raw, err := os.ReadFile(path)
+		// Supplying the root key by path is the documented deployment mode; the
+		// path is operator configuration, not anything an agent can influence.
+		raw, err := os.ReadFile(path) //#nosec G304,G703 -- operator-supplied path by design
 		if err != nil {
 			return fmt.Errorf("read root key file: %w", err)
 		}
@@ -316,7 +318,8 @@ func cmdKeygen(args []string) error {
 	if err := os.WriteFile(path, priv, 0o600); err != nil {
 		return fmt.Errorf("write private key: %w", err)
 	}
-	if err := os.WriteFile(path+".pub", []byte(pub+"\n"), 0o644); err != nil {
+	// A public key is meant to be world-readable -- ssh-keygen writes 0644 too.
+	if err := os.WriteFile(path+".pub", []byte(pub+"\n"), 0o644); err != nil { //#nosec G306 -- public keys are not secret
 		return fmt.Errorf("write public key: %w", err)
 	}
 	fmt.Printf("Private key: %s\nPublic key:  %s\n\n%s\n", path, path+".pub", pub)

@@ -473,7 +473,9 @@ func cmdRun(ctx context.Context, args []string) error {
 		}
 	}()
 
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	// Running a caller-chosen command is the entire feature: this is how a
+	// secret reaches a tool without passing through the agent's context.
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...) //#nosec G204 -- the command to run is the user's explicit argument
 	cmd.Env = env
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {

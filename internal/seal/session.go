@@ -119,8 +119,12 @@ func (s *Session) OpenFromClient(blob, aad []byte) ([]byte, error) {
 func Transcript(serverID, sessionID, fingerprint string, clientPub, clientNonce, serverPub, serverNonce []byte) []byte {
 	var out []byte
 	write := func(b []byte) {
-		var l [4]byte
-		binary.BigEndian.PutUint32(l[:], uint32(len(b)))
+		// An 8-byte prefix cannot wrap for any Go slice, so this encoding stays
+		// injective whatever a caller passes. A 32-bit prefix would in principle
+		// let a field of 2^32+n bytes present the same length as one of n, which
+		// is exactly the collision the length prefixing exists to prevent.
+		var l [8]byte
+		binary.BigEndian.PutUint64(l[:], uint64(len(b))) //#nosec G115 -- len is never negative
 		out = append(out, l[:]...)
 		out = append(out, b...)
 	}

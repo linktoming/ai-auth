@@ -97,7 +97,9 @@ func AgentSigners() ([]ssh.Signer, error) {
 	if sock == "" {
 		return nil, errors.New("sshid: SSH_AUTH_SOCK is not set")
 	}
-	conn, err := net.Dial("unix", sock)
+	// The path comes from the caller's own SSH_AUTH_SOCK and is a unix domain
+	// socket, not a network address; there is no request to forge.
+	conn, err := net.Dial("unix", sock) //#nosec G704 -- unix socket from the caller's own environment
 	if err != nil {
 		return nil, fmt.Errorf("sshid: dial ssh-agent: %w", err)
 	}
@@ -107,7 +109,7 @@ func AgentSigners() ([]ssh.Signer, error) {
 // LoadIdentityFile reads an OpenSSH private key from disk, decrypting it with
 // passphrase if necessary.
 func LoadIdentityFile(path string, passphrase []byte) (ssh.Signer, crypto.PrivateKey, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //#nosec G304 -- the operator names their own identity file
 	if err != nil {
 		return nil, nil, fmt.Errorf("sshid: read identity: %w", err)
 	}

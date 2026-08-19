@@ -73,7 +73,7 @@ func Open(path string) (*Log, error) {
 	} else if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) //#nosec G304 -- log path is operator configuration, not user input
 	if err != nil {
 		return nil, fmt.Errorf("audit: open log: %w", err)
 	}
@@ -130,7 +130,7 @@ func (l *Log) Close() error {
 
 // Read loads every record from a log file.
 func Read(path string) ([]Record, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(path) //#nosec G304 -- log path is operator configuration, not user input
 	if err != nil {
 		return nil, err
 	}

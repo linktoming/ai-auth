@@ -5,10 +5,13 @@ on:
     branches: ["**"]
   pull_request:
 
+# Least privilege by default. Jobs that need more ask for it explicitly.
 permissions:
   contents: read
 
 jobs:
+  # Runs on push and pull_request alike, so a commit carries a green check
+  # whether it arrives via a branch push or a contributor's PR.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -44,3 +47,43 @@ jobs:
       # second-factor minting, approvals and audit verification.
       - name: End-to-end demo
         run: ./examples/demo.sh
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      # Both scanners are pinned rather than tracked at @latest: "go run
+      # tool@latest" in CI executes whatever was published most recently, which
+      # is an unreviewed code path into the build. Dependabot proposes bumps.
+
+      # Reports only vulnerabilities whose affected symbols this code actually
+      # reaches, so a finding here is a genuine call to fix rather than noise
+      # from an unused corner of a dependency.
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
+
+      # Static analysis for the mistakes that matter in a credential store:
+      # weak primitives, unchecked conversions, permissive file modes. Findings
+      # judged safe carry an inline "#nosec <rule> -- reason" naming why.
+      - name: gosec
+        run: |
+          go run github.com/securego/gosec/v2/cmd/gosec@v2.28.0 \
+            -exclude-generated -severity low -confidence low ./...
+
+      # A vault must never ship with a test key or seed baked into it. This
+      # greps the tree for private-key headers outside the fixtures that are
+      # generated at runtime.
+      - name: No committed private keys
+        run: |
+          if grep -rInE --exclude-dir=.git \
+               -e '-----BEGIN [A-Z ]*PRIVATE KEY-----' . ; then
+            echo "::error::a private key appears to be committed"
+            exit 1
+          fi
+          echo "no private keys in the tree"

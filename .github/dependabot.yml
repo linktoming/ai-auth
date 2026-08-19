@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Go dependencies. This project deliberately has almost none -- x/crypto and
+  # its one transitive dependency -- so an update here is worth reading rather
+  # than rubber-stamping.
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+
+  # Workflow actions are executable code with access to the build. Keeping them
+  # current is part of the supply chain, not housekeeping.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"

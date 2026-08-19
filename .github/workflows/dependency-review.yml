@@ -1,0 +1,23 @@
+name: Dependency review
+
+# Pull requests only -- there is no base to diff against on a plain push. Do
+# NOT make this a required status check: a direct push to main would never
+# produce it, and the branch would be permanently unmergeable.
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: low
+          # A permissive licence is part of the supply chain for a security
+          # tool: a copyleft dependency would change what downstream users can
+          # do with the vault.
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unlicense

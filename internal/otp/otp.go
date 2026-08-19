@@ -8,13 +8,18 @@ package otp
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	// RFC 6238 specifies HMAC-SHA1 as the default, and effectively every
+	// authenticator and enrolment page in existence uses it. HMAC-SHA1 has no
+	// practical weakness; the collision attacks on bare SHA-1 do not apply.
+	"crypto/sha1" //#nosec G505 -- required by RFC 6238 for interoperability
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base32"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
@@ -82,14 +87,47 @@ func (c *Config) Normalize() error {
 	return nil
 }
 
-// Step returns the TOTP counter value for the given instant.
+// ErrClockUnusable reports a system clock that cannot produce a meaningful
+// time-based code.
+var ErrClockUnusable = errors.New("otp: system clock is at or before the Unix epoch")
+
+// CheckClock rejects a clock so far wrong that any code derived from it would
+// be nonsense. Callers check this explicitly rather than letting a negative
+// timestamp wrap into a plausible-looking counter.
+func CheckClock(at time.Time) error {
+	if at.Unix() <= 0 {
+		return fmt.Errorf("%w (clock reads %s)", ErrClockUnusable, at.UTC().Format(time.RFC3339))
+	}
+	return nil
+}
+
+// Step returns the TOTP counter value for the given instant. An unusable clock
+// yields step 0; callers reject it via CheckClock rather than minting from it.
 func (c *Config) Step(at time.Time) uint64 {
-	return uint64(at.Unix()) / uint64(c.Period)
+	secs := at.Unix()
+	if secs <= 0 || c.Period <= 0 {
+		return 0
+	}
+	return uint64(secs / int64(c.Period)) //#nosec G115 -- both operands are positive, checked above
 }
 
 // ExpiresAt returns the instant the code for the given step stops being valid.
+// A step too large to express as a Unix time yields the zero time, which the
+// API renders as "no expiry" rather than a wrapped date in the past.
 func (c *Config) ExpiresAt(step uint64) time.Time {
-	return time.Unix(int64((step+1)*uint64(c.Period)), 0).UTC()
+	if c.Period <= 0 {
+		return time.Time{}
+	}
+	period := int64(c.Period)
+	// Compare against step rather than step+1: at the very top of the range
+	// step+1 wraps to zero and would slip straight past the bound it is meant
+	// to be tested against. step >= limit is the same condition without the
+	// addition, so there is nothing left to overflow.
+	limit := uint64(math.MaxInt64 / period) //#nosec G115 -- period is positive, so the quotient is too
+	if step >= limit {
+		return time.Time{}
+	}
+	return time.Unix(int64(step+1)*period, 0).UTC() //#nosec G115 -- bounded by the check above
 }
 
 // Code computes the OTP for an explicit counter value.
@@ -121,6 +159,9 @@ func Code(secret []byte, counter uint64, cfg *Config) (string, error) {
 
 // TOTP computes the time-based code for the given instant.
 func TOTP(secret []byte, at time.Time, cfg *Config) (string, uint64, error) {
+	if err := CheckClock(at); err != nil {
+		return "", 0, err
+	}
 	step := cfg.Step(at)
 	code, err := Code(secret, step, cfg)
 	return code, step, err

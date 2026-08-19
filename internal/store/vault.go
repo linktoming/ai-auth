@@ -108,7 +108,7 @@ func Create(path, serverID string, rootKey []byte, kdf *KDFParams) (*Vault, erro
 
 // Load reads a vault file without unsealing it.
 func Load(path string) (*Vault, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //#nosec G304 -- vault path is operator configuration, not user input
 	if err != nil {
 		return nil, fmt.Errorf("store: read vault: %w", err)
 	}
@@ -222,15 +222,15 @@ func (v *Vault) Save() error {
 	defer os.Remove(tmpName)
 
 	if err := tmp.Chmod(0o600); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return fmt.Errorf("store: chmod temp file: %w", err)
 	}
 	if _, err := tmp.Write(raw); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return fmt.Errorf("store: write vault: %w", err)
 	}
 	if err := tmp.Sync(); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return fmt.Errorf("store: sync vault: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
@@ -240,7 +240,7 @@ func (v *Vault) Save() error {
 		return fmt.Errorf("store: replace vault: %w", err)
 	}
 	// Fsync the directory so the rename itself is durable.
-	if d, err := os.Open(dir); err == nil {
+	if d, err := os.Open(dir); err == nil { //#nosec G304 -- the directory we just wrote the vault into
 		_ = d.Sync()
 		_ = d.Close()
 	}

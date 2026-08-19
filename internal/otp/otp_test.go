@@ -1,6 +1,8 @@
 package otp
 
 import (
+	"errors"
+	"math"
 	"testing"
 	"time"
 )
@@ -138,5 +140,53 @@ func TestParseURI(t *testing.T) {
 
 	if _, _, err := ParseURI("https://example.com"); err == nil {
 		t.Fatal("expected non-otpauth uri to be rejected")
+	}
+}
+
+func TestUnusableClockIsRejectedRatherThanWrapped(t *testing.T) {
+	cfg := &Config{}
+	if err := cfg.Normalize(); err != nil {
+		t.Fatal(err)
+	}
+	secret := []byte("12345678901234567890")
+
+	// A pre-epoch clock used to wrap into a huge counter and yield a
+	// plausible-looking code that no verifier would ever accept.
+	for _, at := range []time.Time{
+		time.Unix(-1, 0),
+		time.Unix(0, 0),
+		time.Date(1969, 7, 20, 20, 17, 0, 0, time.UTC),
+	} {
+		if _, _, err := TOTP(secret, at, cfg); !errors.Is(err, ErrClockUnusable) {
+			t.Errorf("TOTP at %s: expected ErrClockUnusable, got %v", at, err)
+		}
+		if step := cfg.Step(at); step != 0 {
+			t.Errorf("Step at %s = %d, want 0", at, step)
+		}
+	}
+
+	if err := CheckClock(time.Unix(1, 0)); err != nil {
+		t.Fatalf("a positive clock must be usable: %v", err)
+	}
+}
+
+func TestExpiresAtRefusesUnrepresentableSteps(t *testing.T) {
+	cfg := &Config{Period: 30}
+	if err := cfg.Normalize(); err != nil {
+		t.Fatal(err)
+	}
+	// A step this large cannot be turned into a Unix time. Returning the zero
+	// time is what the API renders as "no expiry"; wrapping would produce a
+	// date in the past and make a live code look expired.
+	if got := cfg.ExpiresAt(math.MaxUint64); !got.IsZero() {
+		t.Fatalf("ExpiresAt(MaxUint64) = %s, want the zero time", got)
+	}
+	if got := cfg.ExpiresAt(uint64(math.MaxInt64/30) + 1); !got.IsZero() {
+		t.Fatalf("ExpiresAt past the representable range = %s, want the zero time", got)
+	}
+	// A realistic step still round-trips.
+	step := cfg.Step(time.Unix(1_700_000_000, 0))
+	if exp := cfg.ExpiresAt(step); exp.Unix() != int64(step+1)*30 {
+		t.Fatalf("ExpiresAt(%d) = %s", step, exp)
 	}
 }

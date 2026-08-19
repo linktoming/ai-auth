@@ -130,6 +130,13 @@ func (v *Vault) MintOTP(item *Item, now time.Time) (*Mint, error) {
 	if err := cfg.Normalize(); err != nil {
 		return nil, err
 	}
+	if !cfg.HOTP {
+		// A wrong clock produces codes the far end will reject, which looks
+		// like a credential failure rather than an operational one. Say so.
+		if err := otp.CheckClock(now); err != nil {
+			return nil, err
+		}
+	}
 
 	// Repeat requests inside one time step return the same code. Anything else
 	// would either hand out a second distinct code or waste the agent's quota

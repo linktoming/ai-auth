@@ -133,6 +133,16 @@ second-factor minting, since minting requires reading the seed. Choose per item.
 Reading one needs `--identity` rather than `ssh-agent`, because an agent can
 sign but cannot perform key agreement.
 
+## Contributing
+
+Pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Every change
+goes through the same gates: tests, the race detector, the end-to-end demo,
+govulncheck, gosec, CodeQL and a dependency review. Nothing reaches `main`
+without them, including the maintainer's own commits.
+
+Security issues go through the private route in [SECURITY.md](SECURITY.md),
+never a public issue.
+
 ## Documentation
 
 - [`docs/design.md`](docs/design.md) — how the protocol and crypto work, and why
@@ -140,6 +150,7 @@ sign but cannot perform key agreement.
 - [`docs/api.md`](docs/api.md) — the HTTP API
 - [`docs/operations.md`](docs/operations.md) — deployment, unsealing, rotation, backup
 - [`SECURITY.md`](SECURITY.md) — reporting vulnerabilities
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how changes get reviewed and merged
 
 ## Status
 
