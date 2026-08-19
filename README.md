@@ -153,3 +153,18 @@ credentials in it.
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+
+## Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+This project handles credentials and second-factor secrets. It has not been
+independently security audited. You are solely responsible for evaluating its
+suitability, for how you deploy and operate it, and for any loss, damage,
+credential compromise, service disruption or other harm arising from its use.
+Use it at your own risk.
