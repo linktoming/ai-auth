@@ -34,6 +34,25 @@ vulnerabilities in themselves:
 - An authorised request from a prompt-injected agent is indistinguishable from a
   legitimate one. That is what approval gates are for.
 
+## Automated checks
+
+Every commit and pull request runs, and must pass:
+
+| Check | What it catches |
+|---|---|
+| `go test` + `-race` | Behavioural regressions, and data races in the shared vault state |
+| `examples/demo.sh` | The real binary end to end, including that the denials still deny |
+| [govulncheck](https://go.dev/blog/govulncheck) | Known vulnerabilities whose affected symbols this code actually reaches |
+| gosec | Weak primitives, unchecked conversions, permissive file modes |
+| CodeQL (`security-extended`) | Dataflow-level issues, re-scanned weekly against new queries |
+| Dependency review | Vulnerable or non-permissively-licensed dependencies entering via a PR |
+| Private-key grep | A key or seed accidentally committed to the tree |
+
+These are gates, not reports: a red check blocks the merge. They are a floor,
+not a substitute for review — none of them would notice if a policy check were
+quietly removed, which is why [CONTRIBUTING.md](CONTRIBUTING.md) lists the areas
+that need a human to think about them.
+
 ## Status
 
 This code has **not** been independently audited. The primitives are standard
